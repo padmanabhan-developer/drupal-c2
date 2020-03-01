@@ -1,0 +1,72 @@
+<?php
+
+/**
+ * @file
+ * Override some system function.
+ */
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function group_extras_entity_base_field_info(EntityTypeInterface $entity_type) {
+  $entity_types = Drupal::service('group_extras.entity_type_statistics_in_group')
+    ->getInstalledContentEntityTypes();
+
+  if (!isset($entity_types[$entity_type->id()])) {
+    return;
+  }
+
+  $fields['gids'] = BaseFieldDefinition::create('integer')
+    ->setLabel(t('Groups Id'))
+    ->setCardinality(0)
+    ->setDisplayConfigurable('form', FALSE);
+  return $fields;
+
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ */
+function group_extras_group_content_insert(EntityInterface $entity) {
+  $target_entity = $entity->getEntity();
+  // Auto back reference gids to entity for DX of decoupled system.
+  if (!empty($target_entity) && ($target_entity instanceof ContentEntityInterface)) {
+    update_entity_gids_field_value($target_entity);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete().
+ */
+function group_extras_group_content_delete(EntityInterface $entity) {
+  $target_entity = $entity->getEntity();
+  // Auto back up a group id to entity for the DX of frontend/app.
+  if (!empty($target_entity) && ($target_entity instanceof ContentEntityInterface)) {
+    update_entity_gids_field_value($target_entity);
+  }
+}
+
+/**
+ * Update entity's gids field value.
+ *
+ * @param \Drupal\Core\Entity\ContentEntityInterface $entity
+ *   The entity.
+ */
+function update_entity_gids_field_value(ContentEntityInterface $entity) {
+  if ($entity->hasField('gids')) {
+    $gids = [];
+    $group_contents = Drupal::entityTypeManager()
+      ->getStorage('group_content')
+      ->loadByEntity($entity);
+    /** @var \Drupal\group\Entity\GroupContent $group_content */
+    foreach ($group_contents as $group_content) {
+      $gids[] = $group_content->getGroup()->id();
+    }
+    $entity->set('gids', $gids)->save();
+  };
+}

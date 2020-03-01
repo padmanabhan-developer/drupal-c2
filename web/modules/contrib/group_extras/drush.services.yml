@@ -1,0 +1,6 @@
+services:
+  group_extras.commands:
+    class: \Drupal\group_extras\Commands\GroupExtrasCommands
+    arguments: ['@group_extras.gids_field_tool', '@group_extras.entity_type_statistics_in_group']
+    tags:
+      - { name: drush.command }

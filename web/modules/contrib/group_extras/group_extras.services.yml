@@ -1,0 +1,8 @@
+services:
+  group_extras.entity_type_statistics_in_group:
+    class: Drupal\group_extras\EntityTypeStatisticsInGroup
+    arguments: ['@entity_type.manager', '@plugin.manager.group_content_enabler']
+
+  group_extras.gids_field_tool:
+    class: Drupal\group_extras\GidsFieldTool
+    arguments: ['@entity.definition_update_manager', '@group_extras.entity_type_statistics_in_group']
